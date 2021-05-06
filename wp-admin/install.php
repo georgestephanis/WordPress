@@ -178,6 +178,23 @@ function display_setup_form( $error = null ) {
 			<td><input name="admin_email" type="email" id="admin_email" size="25" value="<?php echo esc_attr( $admin_email ); ?>" />
 			<p><?php _e( 'Double-check your email address before continuing.' ); ?></p></td>
 		</tr>
+		<tr class="hide-if-no-js">
+			<th scope="row"><label for="timezone_string"><?php _e( 'Timezone' ); ?></label></th>
+			<td>
+				<select id="timezone_string" name="timezone_string" aria-describedby="timezone-description" data-autoselect="true">
+					<?php echo wp_timezone_choice( $tzstring, get_user_locale() ); ?>
+				</select>
+				<p class="description" id="timezone-description">
+					<?php
+					printf(
+						/* translators: %s: UTC abbreviation */
+						__( 'Choose either a city in the same timezone as you or a %s (Coordinated Universal Time) time offset.' ),
+						'<abbr>UTC</abbr>'
+					);
+					?>
+				</p>
+			</td>
+		</tr>
 		<tr>
 			<th scope="row"><?php has_action( 'blog_privacy_selector' ) ? _e( 'Site visibility' ) : _e( 'Search engine visibility' ); ?></th>
 			<td>
@@ -351,6 +368,7 @@ switch ( $step ) {
 		}
 
 		$scripts_to_print[] = 'user-profile';
+		$scripts_to_print[] = 'timezone-suggester';
 
 		display_header();
 		?>
@@ -384,6 +402,7 @@ switch ( $step ) {
 		$admin_password       = isset( $_POST['admin_password'] ) ? wp_unslash( $_POST['admin_password'] ) : '';
 		$admin_password_check = isset( $_POST['admin_password2'] ) ? wp_unslash( $_POST['admin_password2'] ) : '';
 		$admin_email          = isset( $_POST['admin_email'] ) ? trim( wp_unslash( $_POST['admin_email'] ) ) : '';
+		$timezone_string      = isset( $_POST['timezone_string'] ) ? trim( wp_unslash( $_POST['timezone_string'] ) ) : '';
 		$public               = isset( $_POST['blog_public'] ) ? (int) $_POST['blog_public'] : 1;
 
 		// Check email address.
@@ -412,6 +431,15 @@ switch ( $step ) {
 		if ( false === $error ) {
 			$wpdb->show_errors();
 			$result = wp_install( $weblog_title, $user_name, $admin_email, $public, '', wp_slash( $admin_password ), $loaded_language );
+			if ( $result ) {
+				// Map UTC+- timezones to gmt_offsets and set timezone_string to empty.
+				if ( $timezone_string && preg_match( '/^UTC[+-]1?\d(:\d\d)?$/', $timezone_string ) ) {
+					$gmt_offset = preg_replace( '/UTC\+?/', '', $timezone_string );
+					update_option( 'gmt_offset', $gmt_offset );
+				} elseif ( $timezone_string && in_array( $timezone_string, timezone_identifiers_list(), true ) ) {
+					update_option( 'timezone_string', $timezone_string );
+				}
+			}
 			?>
 
 <h1><?php _e( 'Success!' ); ?></h1>

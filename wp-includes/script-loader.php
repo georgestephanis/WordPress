@@ -1102,6 +1102,9 @@ function wp_default_scripts( $scripts ) {
 		)
 	);
 
+	$scripts->add( 'timezone-suggester', "/wp-admin/js/timezone-suggester$suffix.js", array( 'jquery', 'wp-i18n' ), false, 1 );
+	$scripts->set_translations( 'timezone-suggester' );
+
 	$scripts->add( 'language-chooser', "/wp-admin/js/language-chooser$suffix.js", array( 'jquery' ), false, 1 );
 
 	$scripts->add( 'user-suggest', "/wp-admin/js/user-suggest$suffix.js", array( 'jquery-ui-autocomplete' ), false, 1 );
